@@ -298,6 +298,7 @@ Table3 <- stargazer(OLS,FE,BE,RE,
 
 phtest(FE, RE)  # ugh...
 
+
 #=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 # A bit of HLMs...                                  ####
 
@@ -415,6 +416,58 @@ Table4 <- stargazer(WEBE.OLS,
 # package, among others):
 
 linearHypothesis(WEBE.OLS,c("NRR.Within=NRR.Between"))
+
+
+# Extension: The "Mundlak device" (using the minimal data
+# frame called "smol" that we created above). First, re-fit 
+# the FE model:
+
+FE2<-plm(WomenBusLawIndex~PopGrowth+UrbanPopulation+FertilityRate+lnGDPPerCap+
+        NaturalResourceRents+PostColdWar,data=smol,effect="individual",model="within")
+
+# Then create unit-level means of *all* the (time-varying) predictors:
+
+smol$PGBetween<-plm::Between(smol$PopGrowth,effect="individual")
+smol$UPBetween<-plm::Between(smol$UrbanPopulation,effect="individual")
+smol$FRBetween<-plm::Between(smol$FertilityRate,effect="individual")
+smol$GDPBetween<-plm::Between(smol$lnGDPPerCap,effect="individual")
+smol$NRRBetween<-plm::Between(smol$NaturalResourceRents,effect="individual")
+smol$PCWBetween<-plm::Between(smol$PostColdWar,effect="individual")
+
+# Finally, regress Y on both using plain-old OLS:
+
+MD<-plm(WomenBusLawIndex~PopGrowth+UrbanPopulation+FertilityRate+lnGDPPerCap+NaturalResourceRents+
+        PostColdWar+PGBetween+UPBetween+FRBetween+GDPBetween+NRRBetween+PCWBetween,
+        data=smol,effect="individual",model="pooling")
+
+summary(MD)
+
+# Compare:
+
+Table5 <- stargazer(FE2,MD,
+                    title="FE and Mundlak Device",
+                    column.separate=c(1,1,1,1),align=TRUE,
+                    dep.var.labels.include=FALSE,
+                    dep.var.caption="",
+                    covariate.labels=c("Population Growth","Urban Population",
+                                       "Fertility Rate","ln(GDP Per Capita)",
+                                       "Natural Resource Rents",
+                                       "Post-Cold War",
+                                       "Between-Country Population Growth",
+                                       "Between-Country Urban Population",
+                                       "Between-Country Fertility Rate",
+                                       "Between-Country ln(GDP Per Capita)",
+                                       "Between-Country Nat. Resource Rents",
+                                       "Between-Country Post-Cold War"),
+                    header=FALSE,model.names=FALSE,
+                    model.numbers=FALSE,multicolumn=FALSE,
+                    object.names=TRUE,notes.label="",
+                    out="Mundlak-24.tex")
+
+# Testing:
+
+linearHypothesis(MD,"PGBetween+UPBetween+FRBetween+
+                 GDPBetween+NRRBetween+PCWBetween")
 
 
 #=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
