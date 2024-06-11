@@ -217,7 +217,7 @@ FE.Time<-plm(WomenBusLawIndex~PopGrowth+UrbanPopulation+FertilityRate+
 
 FE.Units <- FE
 
-CompFETable <- stargazer(FE.Units,FE.Time,
+CompFETable <- stargazer(OLS,FE.Units,FE.Time,
                     title="FE Models of WBLI (Units vs. Periods)",
                     column.separate=c(1,1),align=TRUE,
                     dep.var.labels.include=FALSE,
