@@ -43,7 +43,8 @@ rm(i)
 # 
 # install.packages(pkgs=pkF,type="source",repos=NULL)
 # 
-# Note that this may or may not actually work on any given day...
+# Note that this may or may not actually work on any given day; I
+# have take its use out of the code for now.
 # 
 # NOTE also:
 # 
@@ -102,7 +103,7 @@ summary(fit1K, cluster="ID")
 #=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 # GLS-ARMA models ####
 #
-# Pull the WDI data...
+# Pull the WDI data from the Github repository:
 
 wdi<-read_csv("https://raw.githubusercontent.com/PrisonRodeo/GSERM-Panel-2024/main/Data/WDI24a.csv")
 
@@ -114,6 +115,10 @@ wdi$PostColdWar <- with(wdi,ifelse(Year<1990,0,1))
 
 wdi$GDPPerCapita <- wdi$GDP / wdi$Population
 
+# ... and log it:
+
+wdi$lnGDPPerCap<-log(wdi$GDPPerCapita)
+
 # Keep a numeric year variable (for -panelAR-):
 
 wdi$YearNumeric<-wdi$Year
@@ -122,13 +127,20 @@ wdi$YearNumeric<-wdi$Year
 
 describe(wdi,fast=TRUE,ranges=FALSE,check=TRUE)
 
-# summary(wdi)
+# or summary(wdi)...
 #
 # Make the data a panel dataframe:
 
 WDI<-pdata.frame(wdi,index=c("ISO3","Year"))
 
 xtsum(WDI,na.rm=TRUE)
+
+# Do an example regression:
+
+OLS<-plm(WomenBusLawIndex~PopGrowth+UrbanPopulation+FertilityRate+lnGDPPerCap+NaturalResourceRents+
+           PostColdWar,data=WDI,model="pooling")
+summary(OLS)
+
 
 # Summary statistics:
 
@@ -187,7 +199,7 @@ stargazer(rhos,summary=FALSE,out="Rhos-24.tex",rownames=FALSE,
 #=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 # Models:
 
-# Pooled OLS:
+# (Re-fit the) pooled OLS model:
 
 OLS<-plm(WomenBusLawIndex~PopGrowth+UrbanPopulation+FertilityRate+lnGDPPerCap+NaturalResourceRents+
            PostColdWar,data=smol,model="pooling")
@@ -206,7 +218,7 @@ plot(as.numeric(OLSresids), lag(as.numeric(OLSresids)),pch=20,
      main="Residuals vs. Lagged Residuals",ylab="OLS Residuals",
      xlab="Lagged OLS Residuals")
 acf(OLSresids,main="ACF of OLS Residuals")
-pacf(OLSresids,main="ACF of OLS Residuals")
+pacf(OLSresids,main="PACF of OLS Residuals")
 dev.off()
 
 # Unit-specific autocorrelation? Let's fit a regression to each
